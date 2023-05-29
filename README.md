@@ -8,7 +8,7 @@ ios frida 追踪堆栈脚本
 
 1. 直接填入需要hook的类，函数。支持模糊hook
 
-> trace("+[Tools md5Encrypt:]");
+> hook("+[Tools md5Encrypt:]");
 
 2. 然后frida执行脚本
 

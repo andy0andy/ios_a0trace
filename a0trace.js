@@ -53,11 +53,11 @@ function uniqBy(array, key)
 }
 
 
-function trace(pattern){
+function traceMethod(pattern){
     // pattern: 声明
 
-    let type = (pattern.toString().indexOf("!") === -1) ? "objc" : "module";
-    console.bright(`Instrumenting: ${pattern} - ${type}`); 
+    let type = "objc";
+    console.bright(`Instrumenting: ${pattern}`); 
 
     let resolver = new ApiResolver(type);
     let matches = resolver.enumerateMatches(pattern);
@@ -68,7 +68,6 @@ function trace(pattern){
             onEnter: function(args){
                 
                 console.green("\n================================================");
-                
                 console.yellow(`*** [${this.threadId}] Enter: ${matche.name} (${matche.address})\n`);
 
                 // 类
@@ -94,10 +93,10 @@ function trace(pattern){
                 
             },
             onLeave: function(retval){
-                console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval})`);
+
+                console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval}) ${typeValue}`);
                 
                 console.yellow(`\n*** [${this.threadId}] Exit: ${matche.name} (${matche.address})`);
-
                 console.green("================================================\n");
 
                 return retval;
@@ -109,12 +108,19 @@ function trace(pattern){
 }
 
 
+
+function hook(pattern){
+    if (ObjC.available){
+        if (pattern.toString().indexOf("!") === -1){
+            traceMethod(pattern);
+        }else{}
+    }else{
+        console.red("iOS load fail...");
+    }
+}
+
 // main
 setImmediate(() => {
-    if (ObjC.available){
-
-        // trace("+[Tools md5Encrypt:]"); // 测试
-
-    }
+    hook("+[Tools md5Encrypt:]"); // 测试
 })
 
