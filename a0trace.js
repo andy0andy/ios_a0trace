@@ -52,8 +52,14 @@ function uniqBy(array, key)
 
 }
 
+function get_timestamp()
+{
+	var today = new Date();
+	var timestamp = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate() + ' ' + today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds() + ":" + today.getMilliseconds();
+	return timestamp;
+}
 
-function traceMethod(pattern){
+function traceObjC(pattern){
     // pattern: 声明
 
     let type = "objc";
@@ -68,7 +74,7 @@ function traceMethod(pattern){
             onEnter: function(args){
                 
                 console.green("\n================================================");
-                console.yellow(`*** [${this.threadId}] Enter: ${matche.name} (${matche.address})\n`);
+                console.yellow(`*** [${this.threadId}] - ${get_timestamp()} - Enter: ${matche.name} (${matche.address})\n`);
 
                 // 类
                 let handle = new ObjC.Object(args[0]);
@@ -83,9 +89,12 @@ function traceMethod(pattern){
 
                 // 参数
                 let argsCount = (matche.name.match(/:/g) || []).length;
+                let param_list = pattern.split(":");
+                param_list[0] = param_list[0].split(" ")[1];
+
                 console.cyan(`Arguments: ${argsCount}`);
                 for(let i=2;i<2+argsCount;i++){
-                    console.cyan(`\t${i-2} => ${ObjC.Object(args[i])} (${args[i]})`);
+                    console.cyan(`\t[${i-2}] ${param_list[i-2]}: => ${ObjC.Object(args[i])} (${args[i]})`);
                 }
 
                 // 调用堆栈
@@ -94,9 +103,9 @@ function traceMethod(pattern){
             },
             onLeave: function(retval){
 
-                console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval}) ${typeValue}`);
+                console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval})`);
                 
-                console.yellow(`\n*** [${this.threadId}] Exit: ${matche.name} (${matche.address})`);
+                console.yellow(`\n*** [${this.threadId}] - ${get_timestamp()} - Exit: ${matche.name} (${matche.address})`);
                 console.green("================================================\n");
 
                 return retval;
@@ -107,13 +116,51 @@ function traceMethod(pattern){
         
 }
 
+function traceModule(pattern){
+    // pattern: 声明
 
+    let type = "module";
+    console.bright(`Instrumenting: ${pattern}`); 
+
+    let resolver = new ApiResolver(type);
+    let matches = resolver.enumerateMatches(pattern);
+
+    matches.forEach((matche) => {
+        // hook
+        Interceptor.attach(matche.address, {
+            onEnter: function(args){
+                
+                console.green("\n================================================");
+                console.yellow(`*** [${this.threadId}] - ${get_timestamp()} - Enter: ${matche.name} (${matche.address})\n`);
+
+                console.cyan(`Called: ${matche.name}`);                
+
+                // 调用堆栈
+                console.cyan("\nBacktrace:\n\t" + Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n\t') + '\n');
+                
+            },
+            onLeave: function(retval){
+
+                console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval})`);
+                
+                console.yellow(`\n*** [${this.threadId}] - ${get_timestamp()} - Exit: ${matche.name} (${matche.address})`);
+                console.green("================================================\n");
+
+                return retval;
+            },
+        });
+    });
+
+        
+}
 
 function hook(pattern){
     if (ObjC.available){
         if (pattern.toString().indexOf("!") === -1){
-            traceMethod(pattern);
-        }else{}
+            traceObjC(pattern);
+        }else{
+            traceModule(pattern);
+        }
     }else{
         console.red("iOS load fail...");
     }
@@ -122,5 +169,6 @@ function hook(pattern){
 // main
 setImmediate(() => {
     hook("+[Tools md5Encrypt:]"); // 测试
+
 })
 
