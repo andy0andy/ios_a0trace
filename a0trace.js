@@ -108,7 +108,11 @@ function traceObjC(pattern){
                 
                 console.magenta(`Return: ${matche.name} (${matche.address}) => (${retval})`);
                 // ObjC.Object bool will be fail
-                // console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval})`);
+                // try{
+                //     console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval})`);
+                // }catch(e){
+                //     console.log(e);
+                // }
 
                 
                 console.yellow(`\n*** [${this.threadId}] - ${get_timestamp()} - Exit: ${matche.name} (${matche.address})`);
