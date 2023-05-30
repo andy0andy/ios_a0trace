@@ -90,10 +90,13 @@ function traceObjC(pattern){
                 // 参数
                 let argsCount = (matche.name.match(/:/g) || []).length;
                 let param_list = pattern.split(":");
-                param_list[0] = param_list[0].split(" ")[1];
 
                 console.cyan(`Arguments: ${argsCount}`);
                 for(let i=2;i<2+argsCount;i++){
+                    if (i == 2){
+                        param_list[i-2] = param_list[i-2].split(" ")[1];
+                    }
+
                     console.cyan(`\t[${i-2}] ${param_list[i-2]}: => ${ObjC.Object(args[i])} (${args[i]})`);
                 }
 
@@ -102,8 +105,11 @@ function traceObjC(pattern){
                 
             },
             onLeave: function(retval){
+                
+                console.magenta(`Return: ${matche.name} (${matche.address}) => (${retval})`);
+                // ObjC.Object bool will be fail
+                // console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval})`);
 
-                console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval})`);
                 
                 console.yellow(`\n*** [${this.threadId}] - ${get_timestamp()} - Exit: ${matche.name} (${matche.address})`);
                 console.green("================================================\n");
@@ -168,7 +174,7 @@ function hook(pattern){
 
 // main
 setImmediate(() => {
-    hook("+[Tools md5Encrypt:]"); // 测试
-
+    // hook("+[Tools md5Encrypt:]"); // 测试
+    hook("+[JailBreakCheek isStatPath]");
 })
 
