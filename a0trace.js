@@ -1,6 +1,4 @@
-/*
-hook all
-*/
+
 
 // print color font
 // e.g: console.red(s, "cyan")
@@ -97,7 +95,7 @@ function traceObjC(pattern){
                         param_list[i-2] = param_list[i-2].split(" ")[1];
                     }
 
-                    console.cyan(`\t[${i-2}] ${param_list[i-2]}: => ${ObjC.Object(args[i])} (${args[i]})`);
+                    console.cyan(`\t[${i-2}] ${param_list[i-2]}: => (${ObjC.Object(args[i]).$className}) ${ObjC.Object(args[i])} (${args[i]})`);
                 }
 
                 // 调用堆栈
@@ -107,13 +105,6 @@ function traceObjC(pattern){
             onLeave: function(retval){
                 
                 console.magenta(`Return: ${matche.name} (${matche.address}) => (${retval})`);
-                // ObjC.Object bool will be fail
-                // try{
-                //     console.magenta(`Return: ${matche.name} (${matche.address}) => ${ObjC.Object(retval)} (${retval})`);
-                // }catch(e){
-                //     console.log(e);
-                // }
-
                 
                 console.yellow(`\n*** [${this.threadId}] - ${get_timestamp()} - Exit: ${matche.name} (${matche.address})`);
                 console.green("================================================\n");
@@ -144,9 +135,11 @@ function traceModule(pattern){
                 console.yellow(`*** [${this.threadId}] - ${get_timestamp()} - Enter: ${matche.name} (${matche.address})\n`);
 
                 console.cyan(`Called: ${matche.name}`);                
+                
+                console.cyan(`\t${hexdump(ptr(args[0]), {length: 64, header: true, ansi: true})}`);
 
                 // 调用堆栈
-                console.cyan("\nBacktrace:\n\t" + Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n\t') + '\n');
+                // console.cyan("\nBacktrace:\n\t" + Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n\t') + '\n');
                 
             },
             onLeave: function(retval){
@@ -179,6 +172,6 @@ function hook(pattern){
 // main
 setImmediate(() => {
     // hook("+[Tools md5Encrypt:]"); // 测试
-    hook("+[JailBreakCheek isStatPath]");
+    // hook("+[JailBreakCheek isStatPath]");
 })
 
