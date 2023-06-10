@@ -94,8 +94,9 @@ function traceObjC(pattern){
                     if (i == 2){
                         param_list[i-2] = param_list[i-2].split(" ")[1];
                     }
-
-                    console.cyan(`\t[${i-2}] ${param_list[i-2]}: => (${ObjC.Object(args[i]).$className}) ${ObjC.Object(args[i])} (${args[i]})`);
+                    
+                    let arg_obj = ObjC.Object(args[i]);
+                    console.cyan(`\t[${i-2}] ${param_list[i-2]}: => (${arg_obj.$className}) ${arg_obj.toString()} (${args[i]})`);
                 }
 
                 // 调用堆栈
@@ -103,8 +104,20 @@ function traceObjC(pattern){
                 
             },
             onLeave: function(retval){
+                let showret  = "";
                 
-                console.magenta(`Return: ${matche.name} (${matche.address}) => (${retval})`);
+                try{                    
+                    // 判断指针是否在内存中存在
+                    // 存在则转换 ObjC.Object
+                    // 不存在一律转为 int
+                    Memory.readPointer(retval);
+                    showret = ObjC.Object(retval).toString();
+
+                }catch(e){
+                    showret = parseInt(retval, 16)
+                }
+
+                console.magenta(`Return: ${matche.name} (${matche.address}) => ${showret} (${retval.toString()})`);
                 
                 console.yellow(`\n*** [${this.threadId}] - ${get_timestamp()} - Exit: ${matche.name} (${matche.address})`);
                 console.green("================================================\n");
@@ -134,7 +147,7 @@ function traceModule(pattern){
                 console.green("\n================================================");
                 console.yellow(`*** [${this.threadId}] - ${get_timestamp()} - Enter: ${matche.name} (${matche.address})\n`);
 
-                console.cyan(`Called: ${matche.name}`);                
+                console.cyan(`Called: ${matche.name}`);         
                 
                 console.cyan(`\t${hexdump(ptr(args[0]), {length: 64, header: true, ansi: true})}`);
 
@@ -171,7 +184,7 @@ function hook(pattern){
 
 // main
 setImmediate(() => {
+    // Modify Here
     // hook("+[Tools md5Encrypt:]"); // 测试
-    // hook("+[JailBreakCheek isStatPath]");
 })
 
