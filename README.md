@@ -21,3 +21,9 @@ ios frida 追踪堆栈脚本
 与objection，frida-trace的hook操作比较
 
 [![p9LKPts.png](https://s1.ax1x.com/2023/05/27/p9LKPts.png)](https://imgse.com/i/p9LKPts)
+
+
+**记录异常**
+
+- Interceptor.attach args为*CGRect*时，app直接崩溃
+- Interceptor.attach args为*int*时，app直接崩溃

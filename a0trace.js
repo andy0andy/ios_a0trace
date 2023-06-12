@@ -50,29 +50,68 @@ function uniqBy(array, key)
 
 }
 
-function get_timestamp()
+function genTimestamp()
 {
 	var today = new Date();
 	var timestamp = today.getFullYear() + '-' + (today.getMonth()+1) + '-' + today.getDate() + ' ' + today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds() + ":" + today.getMilliseconds();
 	return timestamp;
 }
 
+function buf2hex(buffer) { // buffer is an ArrayBuffer
+    return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2));
+}
+
+function checkVoid(arg_addr){
+    let byteArr = Memory.readByteArray(arg_addr, 48);
+    let hexArr = buf2hex(byteArr)
+    let voidArr = ['a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3', 'a3'];
+    let is_void = true;
+    for (let i = 0;i < voidArr.length;i++){
+        if (voidArr[i] !== hexArr[i]){
+            is_void = false;
+            break
+        }
+    }
+    return is_void;
+}
+
+// convert arg addr to corresponding str
+function transArgs(arg_addr){
+    let rtnstr = "";
+
+    let baseMod = Process.enumerateModules()[0];
+    
+    if(parseInt(arg_addr, 16) < parseInt(baseMod.base, 16) 
+    || parseInt(arg_addr, 16) > parseInt(baseMod.base.add(baseMod.size), 16)){
+        rtnstr = parseInt(arg_addr, 16).toString()
+    }else if(checkVoid(arg_addr)){
+        rtnstr = "void";
+    }else{
+        rtnstr = ObjC.Object(arg_addr).toString();
+    }
+
+
+    return rtnstr;
+}
+
 function traceObjC(pattern){
     // pattern: 声明
 
     let type = "objc";
-    console.bright(`Instrumenting: ${pattern}`); 
+    console.bright(`Instrumenting: ${pattern}\n`); 
 
     let resolver = new ApiResolver(type);
     let matches = resolver.enumerateMatches(pattern);
 
     matches.forEach((matche) => {
+        console.bright(`Doubtful: ${matche.name}`); 
+
         // hook
         Interceptor.attach(matche.address, {
             onEnter: function(args){
                 
                 console.green("\n================================================");
-                console.yellow(`*** [${this.threadId}] - ${get_timestamp()} - Enter: ${matche.name} (${matche.address})\n`);
+                console.yellow(`*** [${this.threadId}] - ${genTimestamp()} - Enter: ${matche.name} (${matche.address})\n`);
 
                 // 类
                 let handle = new ObjC.Object(args[0]);
@@ -87,7 +126,7 @@ function traceObjC(pattern){
 
                 // 参数
                 let argsCount = (matche.name.match(/:/g) || []).length;
-                let param_list = pattern.split(":");
+                let param_list = matche.name.split(":");
 
                 console.cyan(`Arguments: ${argsCount}`);
                 for(let i=2;i<2+argsCount;i++){
@@ -95,8 +134,10 @@ function traceObjC(pattern){
                         param_list[i-2] = param_list[i-2].split(" ")[1];
                     }
                     
-                    let arg_obj = ObjC.Object(args[i]);
-                    console.cyan(`\t[${i-2}] ${param_list[i-2]}: => (${arg_obj.$className}) ${arg_obj.toString()} (${args[i]})`);
+                    let arg_obj = transArgs(args[i]);
+                    // let arg_obj = args[i];
+                    
+                    console.cyan(`\t[${i-2}] ${param_list[i-2]}: => (${arg_obj.$className}) - ${arg_obj.toString()} - (${args[i]})`);
                 }
 
                 // 调用堆栈
@@ -104,22 +145,11 @@ function traceObjC(pattern){
                 
             },
             onLeave: function(retval){
-                let showret  = "";
+                let showret  = transArgs(retval);
+            
+                console.magenta(`Return: ${matche.name} (${matche.address}) => ${showret} - (${retval.toString()})`);
                 
-                try{                    
-                    // 判断指针是否在内存中存在
-                    // 存在则转换 ObjC.Object
-                    // 不存在一律转为 int
-                    Memory.readPointer(retval);
-                    showret = ObjC.Object(retval).toString();
-
-                }catch(e){
-                    showret = parseInt(retval, 16)
-                }
-
-                console.magenta(`Return: ${matche.name} (${matche.address}) => ${showret} (${retval.toString()})`);
-                
-                console.yellow(`\n*** [${this.threadId}] - ${get_timestamp()} - Exit: ${matche.name} (${matche.address})`);
+                console.yellow(`\n*** [${this.threadId}] - ${genTimestamp()} - Exit: ${matche.name} (${matche.address})`);
                 console.green("================================================\n");
 
                 return retval;
@@ -186,5 +216,10 @@ function hook(pattern){
 setImmediate(() => {
     // Modify Here
     // hook("+[Tools md5Encrypt:]"); // 测试
+
+    // hook("-[Tools rtnVoid]");
+    // hook("-[Tools rtnStr]");
+    // hook("-[Tools rtnBool]");
+    hook("-[Tools rtnInt]");
 })
 
